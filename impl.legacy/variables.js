@@ -216,28 +216,47 @@ exports.for = function (API) {
 
 							// This is always optional. i.e. we fail silently if nothing is found.
 
-							var newMatch = JSONPATH({
-								json: descriptor._data,
-								path: match.path.replace(/\['@translocate'\]$/, ""),
-								resultType: 'all'
-							});
+							var lookupPath = match.path.replace(/\['@translocate'\]$/, "");
 
-							if (newMatch.length === 1) {
-
-								var parentNode = JSONPATH({
-									json: obj,
-									path: match.path.replace(/\['@translocate'\]$/, ""),
-									resultType: 'all'
-								})[0];
+							// TODO: Fix this in JSONPath so we get segments back wrapped in '[""]'
+							// $@github.com~sourcemint~sm.expand~0/map
+							var m = lookupPath.match(/^\$(@.+)$/);
+							if (m) {
 
 								// NOTE: The external descriptor always overrides our values!
 								// TODO: Make this positional based on line in file.
-								parentNode.parent[parentNode.parentProperty] = DEEPMERGE(
-									parentNode.parent[parentNode.parentProperty],
-									newMatch[0].value
+								obj[m[1]] = DEEPMERGE(
+									obj[m[1]],
+									descriptor._data[m[1]]
 								);
 
-								delete parentNode.parent[parentNode.parentProperty]["@translocate"];
+								delete obj[m[1]]["@translocate"];
+
+							} else {
+
+								var newMatch = JSONPATH({
+									json: descriptor._data,
+									path: lookupPath,
+									resultType: 'all'
+								});
+
+								if (newMatch.length === 1) {
+
+									var parentNode = JSONPATH({
+										json: obj,
+										path: match.path.replace(/\['@translocate'\]$/, ""),
+										resultType: 'all'
+									})[0];
+
+									// NOTE: The external descriptor always overrides our values!
+									// TODO: Make this positional based on line in file.
+									parentNode.parent[parentNode.parentProperty] = DEEPMERGE(
+										parentNode.parent[parentNode.parentProperty],
+										newMatch[0].value
+									);
+
+									delete parentNode.parent[parentNode.parentProperty]["@translocate"];
+								}
 							}
 
 							return callback(null);
