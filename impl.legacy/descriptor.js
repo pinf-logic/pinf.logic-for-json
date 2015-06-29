@@ -383,7 +383,9 @@ Descriptor.prototype.init = function (callback) {
 								self._data['$provenance'][path] = {
 									"@args": opts["@args"] || {}
 								};
-							} else {
+							} else
+							if (opts["@args"]) {
+
 console.log("May need to add to existing provenance", opts["@args"], " -> ", self._data['$provenance'][path]);	
 process.exit(1);							
 							}
