@@ -223,14 +223,17 @@ exports.for = function (API) {
 							var m = lookupPath.match(/^\$(@.+)$/);
 							if (m) {
 
-								// NOTE: The external descriptor always overrides our values!
-								// TODO: Make this positional based on line in file.
-								obj[m[1]] = DEEPMERGE(
-									obj[m[1]],
-									descriptor._data[m[1]]
-								);
-
-								delete obj[m[1]]["@translocate"];
+								if (descriptor._data[m[1]]) {
+									// NOTE: The external descriptor always overrides our values!
+									// TODO: Make this positional based on line in file.
+									obj[m[1]] = DEEPMERGE(
+										obj[m[1]] || {},
+										descriptor._data[m[1]]
+									);
+								}
+								if (obj[m[1]]) {
+									delete obj[m[1]]["@translocate"];
+								}
 
 							} else {
 
