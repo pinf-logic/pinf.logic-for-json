@@ -118,6 +118,21 @@ exports.for = function (API) {
 					config[match.value] = {};
 //				}
 
+//console.log("MATCH", match);
+//console.log("SEGMENTS", match.path.split("]["));
+//console.log("liveConfig", liveConfig);
+
+// TODO: Provide `groupConfig` -> `siblingConfig` and `inheritedSiblingConfig`
+
+				var pathSegments = match.path.split("][");
+				pathSegments.pop();
+				var configMatch = JSONPATH({
+					json: liveConfig,
+					path: pathSegments.join("][") + "]",
+					resultType: 'all'
+				});
+				config[match.value] = configMatch[0].value;
+
 				return exports.instanciateConfig(config, groupConfig).then(function (config) {
 
 					API.EXTEND(false, match.parent[match.parentProperty], config);
@@ -148,13 +163,19 @@ exports.for = function (API) {
 				throw new Error("Module for '" + implPath + "' must export 'for' function!");
 			}
 
+			API._NO_INIT_PLComponent = true;
+
 			return Q.when(impl.for(API)).then(function (component) {
 
 				// TODO: Use schema to optionally validate 'component' api.
 				if (typeof component.PLComponent !== "function") {
+					console.log("impl.for", impl.for);
+					console.log("component", component);
 					// POLICY: A 'Component' is a contextualized 'Module'.
 					throw new Error("Component at '" + implPath + "' must export 'PLComponent' function!");
 				}
+
+//console.log("instanciateComponentAt", config, name, implPath, groupConfig);
 
 				return exports.instanciateImplementations(config[name], groupConfig).then(function (liveConfig) {
 
@@ -177,12 +198,16 @@ exports.for = function (API) {
 
 	exports.instanciateConfig = function (config, groupConfig) {
 		var done = Q.resolve();
+
+//console.log("instanciateConfig", config, groupConfig);
+
 		// TODO: Load dependency rules from descriptors and resolve in correct order
 		//       vs relying on declared JSON object order.
 		Object.keys(config).forEach(function (name) {
 			if (
 				!/^[^\.\$]+\.[^\/]+\//.test(name)
 			) {
+//console.log("instanciateImplementations", name);
 				done = Q.when(done, function () {
 //					return exports.instanciateImplementations(config, config).then(function (liveConfig) {
 					return exports.instanciateImplementations(config, groupConfig).then(function (liveConfig) {
@@ -193,6 +218,7 @@ exports.for = function (API) {
 			}
 
 			done = Q.when(done, function () {
+//console.log("findImplementationForNamespace", name);
 				return exports.findImplementationForNamespace(name).then(function (implPath) {
 
 					return exports.instanciateComponentAt(config, name, implPath, groupConfig || config).then(function (_config) {
@@ -208,8 +234,76 @@ exports.for = function (API) {
 
 	exports.unfreezeConfig = function (config) {
 		var done = Q.resolve();
+
+//console.log("UNFREEZE unfreezeConfig", config);
+
 		Object.keys(config).forEach(function (name) {
-			if (!config[name].$PLComponent) return;
+
+//console.log("NAME", name, config[name]);
+
+			if (!config[name].$PLComponent) {
+//console.log("NOT FOUND");
+				var match = JSONPATH({
+					json: config[name],
+					path: "$..$PLComponent",
+					resultType: 'all'
+				});
+
+				if (match.length === 0) return;
+
+throw new Error("TODO: Implement loading of sub-components");
+/*
+				match.forEach(function (match) {
+
+console.log("UNFREEZE", match);
+
+					var implNamespace = match.value;
+
+
+					var pathSegments = match.path.split("][");
+					pathSegments.pop();
+					var configMatch = JSONPATH({
+						json: config,
+						path: pathSegments.join("][") + "]",
+						resultType: 'all'
+					});
+console.log("configMatch", configMatch);
+
+					configMatch.forEach(function (configMatch) {
+
+						done = Q.when(done, function () {
+							return exports.findImplementationForNamespace(implNamespace).then(function (implPath) {
+
+
+								return exports.instanciateComponentAt(configMatch.parent, configMatch.parentProperty, implPath, config).then(function (_config) {
+
+console.log("NEW CONFIG", _config);
+
+console.log("config[name]", name, config[name]);
+
+
+if (pathSegments.length > 1) {
+
+
+} else {
+//	config = 
+}
+
+
+process.exit(1);
+
+//									config = _config;
+								});
+							});
+						});
+					});
+
+
+				});
+*/
+				return;
+			}
+
 			done = Q.when(done, function () {
 				return exports.findImplementationForNamespace(config[name].$PLComponent).then(function (implPath) {
 					return exports.instanciateComponentAt(config, name, implPath, config).then(function (_config) {

@@ -131,7 +131,10 @@ console.log("CONFIG pinfConfig", pinfConfig);
 var Descriptor = exports.Descriptor = function (proto, path, data, options) {
 	var self = this;
 	self._proto = proto;
-	self._path = path;
+
+	// TODO: Do this somewhere else.
+	self._path = FS.realpathSync(path);
+
 	self._data = data;
 	self._options = options;
 
@@ -585,6 +588,11 @@ process.exit(1);
 							if (optional) {
 								return callback(null);
 							}
+							console.log("self._data", self._data);
+							console.log("locators", locators);
+							console.log("locatorKey", locatorKey);
+							console.log("locator", locator);
+							console.log("self._path", self._path);
 							return callback(new Error("Extends path '" + path + "' does not exist!"));
 						}
 						return exports.fromFile(self._proto, path, self._options, function (err, descriptor) {

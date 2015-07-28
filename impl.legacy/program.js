@@ -239,6 +239,8 @@ function forAPI (API) {
 
 console.log("self.depends", self.depends);
 
+console.log("POINTER", "$" + pointer.replace(/^\[/, ".["));
+
 console.log(new Error("handle functions: " + pointer).stack);
 process.exit(1);
 									throw new Error("Pointer '" + ("$" + pointer) + "' not found in values!");
