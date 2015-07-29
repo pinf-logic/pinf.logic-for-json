@@ -384,7 +384,10 @@ Descriptor.prototype.init = function (callback) {
 							if (!self._data['$provenance'][path]) {
 								// TODO: Add '$depends' property.
 								self._data['$provenance'][path] = {
-									"@args": opts["@args"] || {}
+									"locatorKey": locatorKey,
+									"config": {
+										"@args": opts["@args"] || {}
+									}
 								};
 							} else
 							if (opts["@args"]) {
