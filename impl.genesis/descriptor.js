@@ -5,13 +5,11 @@ exports.for = function (API) {
 
 	var exports = {};
 
-	exports.fromFile = function (path) {
+	exports.fromFile = function (path, options) {
 
 		function loadLegacy () {
 			return API.Q.denodeify(function (callback) {
-				return API.LEGACY.PACKAGE.fromFile(path, {
-
-				}, function (err, descriptor) {
+				return API.LEGACY.PACKAGE.fromFile(path, options || {}, function (err, descriptor) {
 					if (err) return callback(err);
 					return callback(null, descriptor._data);
 				});

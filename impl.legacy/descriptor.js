@@ -368,7 +368,10 @@ Descriptor.prototype.init = function (callback) {
 						var path = locator.location.replace(/(\/)\*(\.proto\.json)$/, "$1" + self.getProtoBasename() + "$2");
 						return FS.exists(path, function(exists) {
 							if (!exists) {
-								if (optional) {
+								if (optional || self._options.ignoreMissingExtends) {
+									if (typeof self._options.ignoreMissingExtends === "function") {
+										self._options.ignoreMissingExtends(path);
+									}
 									return callback(null);
 								}
 								return callback(new Error("Extends path '" + path + "' does not exist!"));

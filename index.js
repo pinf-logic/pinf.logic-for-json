@@ -30,9 +30,9 @@ exports.for = function (API) {
 		self.originDescriptorPath = origin.replace(/^file:\/\//, "");
 	}
 
-	Logic.prototype.load = function () {
+	Logic.prototype.load = function (options) {
 		var self = this;
-		return API.DESCRIPTOR.fromFile(self.originDescriptorPath).then(function (descriptor) {
+		return API.DESCRIPTOR.fromFile(self.originDescriptorPath, options).then(function (descriptor) {
 			return {
 				origin: self.originDescriptorPath,
 				descriptor: descriptor
@@ -40,9 +40,9 @@ exports.for = function (API) {
 		});
 	}
 
-	return function (origin) {
+	return function (origin, options) {
 		var logic = new Logic(origin);
-		return logic.load();
+		return logic.load(options);
 	}
 }
 
