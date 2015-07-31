@@ -1,6 +1,7 @@
 
 const Q = require("q");
 const JSONPATH = require("JSONPath");
+const JSONQ = require("jsonq");
 
 
 exports.for = function (API) {
@@ -38,6 +39,8 @@ exports.for = function (API) {
 
 		var packageSourceInfo = findPackageSourceInfo(name);
 
+//		if (API.DEBUG) console.log("findImplementationForNamespace", name);
+
 		if (!packageSourceInfo) {
 			// TODO: Dynamically download plugins.
 			console.error("name", name);
@@ -52,6 +55,8 @@ exports.for = function (API) {
 
 			if (err) return deferred.reject(err);
 			pluginDescriptor = pluginDescriptor._data;
+
+//			if (API.DEBUG) console.log("findImplementationForNamespace packageSourceInfo.api", packageSourceInfo.api);
 
 			var implPath = null;
 			if (packageSourceInfo.api) {
@@ -70,6 +75,8 @@ exports.for = function (API) {
 				implPath = API.PATH.join(packageSourceInfo.path, pluginDescriptor.main || "");
 			}
 
+//			if (API.DEBUG) console.log("findImplementationForNamespace implPath", implPath);
+
 			return deferred.resolve(implPath);
 		});
 		return deferred.promise;
@@ -78,6 +85,8 @@ exports.for = function (API) {
 	exports.instanciateImplementations = function (restingConfig, groupConfig) {
 
 		var liveConfig = API.EXTEND(false, {}, restingConfig);
+
+//console.log("instanciateImplementations", restingConfig);
 
 		var match = JSONPATH({
 			json: liveConfig,
@@ -95,6 +104,9 @@ exports.for = function (API) {
 			return Q.fcall(function () {
 
 				if (typeof match.parent[match.parentProperty] !== "string") {
+
+//console.log("instanciateImplementations DO UNFREEZE");
+
 					return exports.unfreezeConfig(match.parent[match.parentProperty]).then(function (config) {
 						API.EXTEND(false, match.parent[match.parentProperty], config);
 					});
@@ -139,7 +151,98 @@ exports.for = function (API) {
 
 				});
 
+
+/*
+
+// TODO: Remove the first JSONPATH test if no longer needed.
+				//       NOTE: If we use JSONQ some values don't merge properly!
+				//       This needs to be implemented outside and then re-integrated.
+				try {
+					var pathSegments = match.path.split("][");
+					pathSegments.pop();
+
+					var configMatch = JSONPATH({
+						json: liveConfig,
+						path: pathSegments.join("][") + "]",
+						resultType: 'all'
+					});
+					if (configMatch.length === 0) {
+
+						pathSegments = match.path.replace(/(^\$\['|'$)/, "").split("']['");
+						pathSegments.pop();
+
+						// The JSONPATH implementation does not handle some selectors if a
+						// property name has special characters in it.
+						// TODO: Make this the first approach to search for the value.
+
+console.log("pathSegments", pathSegments);
+
+console.log("PATH VALUE", JSONQ.pathValue(liveConfig, pathSegments));
+
+						config[match.value] = JSONQ.pathValue(liveConfig, pathSegments);
+
+console.log("IN CONFIG", config);
+
+						if (!groupConfig) {
+							groupConfig = JSONQ.pathValue(liveConfig, pathSegments.splice(0, pathSegments.length-1));
+						}
+
+						return exports.instanciateConfig(config, groupConfig).then(function (config) {
+
+console.log("OUT CONFIG", config);
+
+							API.EXTEND(false, match.parent[match.parentProperty], config);
+						});
+*/ 
+/*
+						var ret = null;
+						var $ = liveConfig;
+						eval('ret=' + pathSegments.join("][") + "]");
+						if (!ret) {
+							console.error("liveConfig", JSON.stringify(liveConfig, null, 4));
+							console.error("pathSegments", pathSegments.join("][") + "]");
+							throw new Error("No matches!");
+						}
+
+						config[match.value] = ret;
+
+						var siblingConfig = null;
+						var $ = liveConfig;
+						eval('siblingConfig=' + pathSegments.join("][").replace(/\[([^\[]+)$/, ""));
+						if (!groupConfig) {
+							groupConfig = siblingConfig;
+						}
+
+						return exports.instanciateConfig(config, groupConfig).then(function (config) {
+
+							API.EXTEND(false, siblingConfig[pathSegments.join("][").match(/\['([^\[]+)'$/)[1]], config);
+
+						});
+*/
+/*
+
+					}
+					config[match.value] = configMatch[0].value;
+
+					return exports.instanciateConfig(config, groupConfig).then(function (config) {
+
+						API.EXTEND(false, match.parent[match.parentProperty], config);
+
+					});
+
+				} catch (err) {
+					console.error("config", JSON.stringify(config, null, 4));
+					throw err;
+				};
+*/
+
+
+
+
 			}).fail(function (err) {
+				if (err) {
+					console.error("match", match);
+				}
 				if (err.code === 404) {
 					API.console.warn("WARNING: " + err.stack.replace(/^Error: /, "").split("\n").slice(0, 3).join("; "));
 					return;
